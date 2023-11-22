@@ -6,7 +6,7 @@ import Test.HUnit
       Counts(failures),
       Test(TestList, TestCase) )
 import System.Exit ( exitFailure, exitSuccess )
-import DtwRecursiveSlowTests
+import DtwTests
 
 sanityTest :: Test
 sanityTest = TestCase (assertEqual "should be 3" 3 (1 + 2))
@@ -15,7 +15,7 @@ allTests :: Test
 allTests = TestList
     ([
         sanityTest,
-        DtwRecursiveSlowTests.tests
+        DtwTests.tests
     ])
 
 main :: IO ()

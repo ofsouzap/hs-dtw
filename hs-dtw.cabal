@@ -45,7 +45,7 @@ library Dtw
 test-suite Test
     type:             exitcode-stdio-1.0
     main-is:          Main.hs
-    other-modules:    DtwRecursiveSlowTests
+    other-modules:    DtwTests
     build-depends:    base >=4.16.4.0,
                       HUnit ^>=1.6,
                       Dtw
