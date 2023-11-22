@@ -1,5 +1,6 @@
 module Dtw
   (
+  CostVal,
   dtwRecursiveSlow
   )
 where
