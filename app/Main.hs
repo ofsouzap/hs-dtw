@@ -1,7 +1,7 @@
 module Main where
 
 import Text.Show ()
-import Dtw (dtwRecursiveSlow, dtwMemoising)
+import Dtw (dtwMemoising)
 import GHC.Arr ((!), listArray)
 
 seqA :: [Int]
@@ -32,9 +32,7 @@ doOutput (x, y) = do
 
 main :: IO ()
 main = do
-    let (n,m) = (3,2) in
-        print ((listArray ((0,0),(n-1,m-1)) [(i `div` m, i `mod` m) | i <- [0..(n*m)]])!(2,1))
-    -- doOutput (0, 0)
-    -- doOutput (1, 2)
-    -- doOutput (3, 1)
-    -- doOutput (5, 3)
+    doOutput (0, 0)
+    doOutput (1, 2)
+    doOutput (3, 1)
+    doOutput (5, 3)
