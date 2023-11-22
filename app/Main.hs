@@ -1,7 +1,8 @@
 module Main where
 
 import Text.Show ()
-import Dtw (dtwRecursiveSlow)
+import Dtw (dtwRecursiveSlow, dtwMemoising)
+import GHC.Arr ((!), listArray)
 
 seqA :: [Int]
 seqA = [1, 1, 1, 2, 3, 4]
@@ -17,7 +18,7 @@ listToString [] = ""
 listToString (h:ts) = show h ++ "," ++ listToString ts
 
 runFor :: (Int, Int) -> Maybe ([(Int, Int)], Int)
-runFor (x, y) = dtwRecursiveSlow costFunc (take (x+1) seqA) (take (y+1) seqB)
+runFor (x, y) = dtwMemoising costFunc (take (x+1) seqA) (take (y+1) seqB)
 
 outputFor :: Maybe ([(Int, Int)], Int) -> String
 outputFor x = case x of
@@ -31,7 +32,9 @@ doOutput (x, y) = do
 
 main :: IO ()
 main = do
-    doOutput (0, 0)
-    doOutput (1, 2)
-    doOutput (3, 1)
-    doOutput (5, 3)
+    let (n,m) = (3,2) in
+        print ((listArray ((0,0),(n-1,m-1)) [(i `div` m, i `mod` m) | i <- [0..(n*m)]])!(2,1))
+    -- doOutput (0, 0)
+    -- doOutput (1, 2)
+    -- doOutput (3, 1)
+    -- doOutput (5, 3)

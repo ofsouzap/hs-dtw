@@ -8,7 +8,7 @@ import Test.HUnit
 import System.Exit ( exitFailure, exitSuccess )
 import GHC.Stack (HasCallStack)
 
-import Dtw (dtwRecursiveSlow, CostVal)
+import Dtw (dtwRecursiveSlow, CostVal, dtwMemoising)
 
 type DtwFunc a x = (a -> a -> x) -> [a] -> [a] -> Maybe ([(Int, Int)], x)
 
@@ -40,17 +40,14 @@ assertEqualOneOf msg exps out = assertBool msg (out `elem` exps)
 getCasePart :: (Int, Int) -> ([a], [a]) -> ([a], [a])
 getCasePart (x, y) (seqA, seqB) = (take (x+1) seqA, take (y+1) seqB)
 
-genTest :: CostVal x => DtwFunc a x -> (a -> a -> x) -> [a] -> [a] -> (Int, Int) -> Maybe ([(Int, Int)], x)
-genTest dtwFunc cost fullA fullB pos = let (seqA, seqB) = getCasePart pos (fullA, fullB) in dtwFunc cost seqA seqB
+genTest :: CostVal x => (a -> a -> x) -> [a] -> [a] -> DtwFunc a x -> (Int, Int) -> Maybe ([(Int, Int)], x)
+genTest cost fullA fullB dtwFunc pos = let (seqA, seqB) = getCasePart pos (fullA, fullB) in dtwFunc cost seqA seqB
 
-genRecSlowTest :: CostVal x => (a -> a -> x) -> [a] -> [a] -> (Int, Int) -> Maybe ([(Int, Int)], x)
-genRecSlowTest = genTest dtwRecursiveSlow
+genCase1Test :: DtwFunc Double Double -> (Int, Int) -> Maybe ([(Int, Int)], Double)
+genCase1Test = genTest case1CostFunc case1SeqA case1SeqB
 
-genRecSlowCase1Test :: (Int, Int) -> Maybe ([(Int, Int)], Double)
-genRecSlowCase1Test = genRecSlowTest case1CostFunc case1SeqA case1SeqB
-
-genRecSlowCase2Test :: (Int, Int) -> Maybe ([(Int, Int)], Double)
-genRecSlowCase2Test = genRecSlowTest case2CostFunc case2SeqA case2SeqB
+genCase2Test :: DtwFunc Double Double -> (Int, Int) -> Maybe ([(Int, Int)], Double)
+genCase2Test = genTest case2CostFunc case2SeqA case2SeqB
 
 -- Tests
 
@@ -64,68 +61,68 @@ genRecSlowCase2Test = genRecSlowTest case2CostFunc case2SeqA case2SeqB
 --         (genRecSlowCase1Test (?, ?))
 --     ))
 
-testRecSlowCase1Negative :: Test
-testRecSlowCase1Negative = TestLabel "RecSlow-Case1-Negative" (TestCase
+genTestCase1Negative :: DtwFunc Double Double -> Test
+genTestCase1Negative dtw = TestLabel "RecSlow-Case1-Negative" (TestCase
     (
         assertEqual ""
         Nothing
-        (genRecSlowCase1Test (-1, -4))
+        (genCase1Test dtw (-1, -4))
     ))
 
-testRecSlowCase1OutOfBounds :: Test
-testRecSlowCase1OutOfBounds = TestLabel "RecSlow-Case1-OutOfBounds" (TestCase
+genTestCase1OutOfBounds :: DtwFunc Double Double -> Test
+genTestCase1OutOfBounds dtw = TestLabel "RecSlow-Case1-OutOfBounds" (TestCase
     (
         assertEqual ""
         Nothing
-        (genRecSlowCase1Test (4, 5))
+        (genCase1Test dtw (4, 5))
     ))
 
-testRecSlowCase1Full :: Test
-testRecSlowCase1Full = TestLabel "RecSlow-Case1-Full" (TestCase
+genTestCase1Full :: DtwFunc Double Double -> Test
+genTestCase1Full dtw = TestLabel "RecSlow-Case1-Full" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,1), (4,2), (5,3) ], 0))
-        (genRecSlowCase1Test (5, 3))
+        (genCase1Test dtw (5, 3))
     ))
 
-testRecSlowCase1At01 :: Test
-testRecSlowCase1At01 = TestLabel "RecSlow-Case1-0,1" (TestCase
+genTestCase1At01 :: DtwFunc Double Double -> Test
+genTestCase1At01 dtw = TestLabel "RecSlow-Case1-0,1" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (0,1) ], 1))
-        (genRecSlowCase1Test (0, 1))
+        (genCase1Test dtw (0, 1))
     ))
 
-testRecSlowCase1At50 :: Test
-testRecSlowCase1At50 = TestLabel "RecSlow-Case1-5,0" (TestCase
+genTestCase1At50 :: DtwFunc Double Double -> Test
+genTestCase1At50 dtw = TestLabel "RecSlow-Case1-5,0" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,0), (4,0), (5,0) ], 14))
-        (genRecSlowCase1Test (5, 0))
+        (genCase1Test dtw (5, 0))
     ))
 
-testRecSlowCase1At33 :: Test
-testRecSlowCase1At33 = TestLabel "RecSlow-Case1-3,3" (TestCase
+genTestCase1At33 :: DtwFunc Double Double -> Test
+genTestCase1At33 dtw = TestLabel "RecSlow-Case1-3,3" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,1), (3,2), (3,3) ], 5))
-        (genRecSlowCase1Test (3, 3))
+        (genCase1Test dtw (3, 3))
     ))
 
-testRecSlowCase1At42 :: Test
-testRecSlowCase1At42 = TestLabel "RecSlow-Case1-4,2" (TestCase
+genTestCase1At42 :: DtwFunc Double Double -> Test
+genTestCase1At42 dtw = TestLabel "RecSlow-Case1-4,2" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,1), (4,2) ], 0))
-        (genRecSlowCase1Test (4, 2))
+        (genCase1Test dtw (4, 2))
     ))
 
-testRecSlowCase1At41 :: Test
-testRecSlowCase1At41 = TestLabel "RecSlow-Case1-4,1" (TestCase
+genTestCase1At41 :: DtwFunc Double Double -> Test
+genTestCase1At41 dtw = TestLabel "RecSlow-Case1-4,1" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,1), (4,1) ], 1))
-        (genRecSlowCase1Test (4, 1))
+        (genCase1Test dtw (4, 1))
     ))
 
 -- Case 2 Tests
@@ -138,80 +135,93 @@ testRecSlowCase1At41 = TestLabel "RecSlow-Case1-4,1" (TestCase
 --         (genRecSlowCase2Test (?, ?))
 --     ))
 
-testRecSlowCase2Negative :: Test
-testRecSlowCase2Negative = TestLabel "RecSlow-Case2-Negative" (TestCase
+genTestCase2Negative :: DtwFunc Double Double -> Test
+genTestCase2Negative dtw = TestLabel "RecSlow-Case2-Negative" (TestCase
     (
         assertEqual ""
         Nothing
-        (genRecSlowCase2Test (-3, 1))
+        (genCase2Test dtw (-3, 1))
     ))
 
-testRecSlowCase2OutOfBounds :: Test
-testRecSlowCase2OutOfBounds = TestLabel "RecSlow-Case2-OutOfBounds" (TestCase
+genTestCase2OutOfBounds :: DtwFunc Double Double -> Test
+genTestCase2OutOfBounds dtw = TestLabel "RecSlow-Case2-OutOfBounds" (TestCase
     (
         assertEqual ""
         Nothing
-        (genRecSlowCase2Test (1, 8))
+        (genCase2Test dtw (1, 8))
     ))
 
-testRecSlowCase2Full :: Test
-testRecSlowCase2Full = TestLabel "RecSlow-Case2-Full" (TestCase
+genTestCase2Full :: DtwFunc Double Double -> Test
+genTestCase2Full dtw = TestLabel "RecSlow-Case2-Full" (TestCase
     (
         assertEqual ""
         (Just 11)
-        (fmap snd (genRecSlowCase2Test (4, 5)))
-    ))
+        (fmap snd (genCase2Test dtw (4, 5))))
+    )
 
-testRecSlowCase2At00 :: Test
-testRecSlowCase2At00 = TestLabel "RecSlow-Case2-0,0" (TestCase
+genTestCase2At00 :: DtwFunc Double Double -> Test
+genTestCase2At00 dtw = TestLabel "RecSlow-Case2-0,0" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0) ], 0))
-        (genRecSlowCase2Test (0, 0))
+        (genCase2Test dtw (0, 0))
     ))
 
-testRecSlowCase2At14 :: Test
-testRecSlowCase2At14 = TestLabel "RecSlow-Case2-1,4" (TestCase
+genTestCase2At14 :: DtwFunc Double Double -> Test
+genTestCase2At14 dtw = TestLabel "RecSlow-Case2-1,4" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (0,1), (0,2), (0,3), (1,4) ], 5))
-        (genRecSlowCase2Test (1, 4))
+        (genCase2Test dtw (1, 4))
     ))
 
-testRecSlowCase2At13 :: Test
-testRecSlowCase2At13 = TestLabel "RecSlow-Case2-1,3" (TestCase
+genTestCase2At13 :: DtwFunc Double Double -> Test
+genTestCase2At13 dtw = TestLabel "RecSlow-Case2-1,3" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (0,1), (0,2), (2,3) ], 4))
-        (genRecSlowCase2Test (1, 3))
+        (genCase2Test dtw (1, 3))
     ))
 
-testRecSlowCase2At30 :: Test
-testRecSlowCase2At30 = TestLabel "RecSlow-Case2-3,0" (TestCase
+genTestCase2At30 :: DtwFunc Double Double -> Test
+genTestCase2At30 dtw = TestLabel "RecSlow-Case2-3,0" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,0) ], 3))
-        (genRecSlowCase2Test (3, 0))
+        (genCase2Test dtw (3, 0))
     ))
 
-testRecSlowCase2At42 :: Test
-testRecSlowCase2At42 = TestLabel "RecSlow-Case2-4,2" (TestCase
+genTestCase2At42 :: DtwFunc Double Double -> Test
+genTestCase2At42 dtw = TestLabel "RecSlow-Case2-4,2" (TestCase
     (
         assertEqual ""
         (Just ([ (0,0), (1,0), (2,0), (3,1), (3,2) ], 8))
-        (genRecSlowCase2Test (4, 2))
+        (genCase2Test dtw (4, 2))
     ))
 
-tests :: Test
-tests = TestList
+testGens :: [DtwFunc Double Double -> Test]
+testGens =
     [
-        testRecSlowCase1Full,
-        testRecSlowCase1At01,
-        testRecSlowCase1At50,
-        testRecSlowCase1At33,
-        testRecSlowCase1At42,
-        testRecSlowCase1At41
+        genTestCase1Full,
+        genTestCase1At01,
+        genTestCase1At50,
+        genTestCase1At33,
+        genTestCase1At42,
+        genTestCase1At41
     ]
+
+testFuncs :: [DtwFunc Double Double]
+testFuncs =
+    [
+        dtwRecursiveSlow,
+        dtwMemoising
+    ]
+
+testPairs :: [(DtwFunc Double Double -> Test, DtwFunc Double Double)]
+testPairs = [(x, y) | x <- testGens, y <- testFuncs]
+
+tests :: Test
+tests = TestList (map (\ (f, x) -> f x) testPairs)
 
 main :: IO ()
 main = do
