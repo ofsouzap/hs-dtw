@@ -95,5 +95,3 @@ dtwMemoising cost xs ys = finaliseOutput (dp!(n-1,m-1)) where
   optimumAt (x, y) = case findMinPrev (dp!) (prevsFor (n, m) (x, y)) of
     Nothing -> Nothing
     Just (prevSeq, prevCost) -> Just ((x, y) : prevSeq, costIdxs x y .+. prevCost)
-
--- TODO - test if memoising implementation is actually being faster (otherwise was probably implemented wrong)
